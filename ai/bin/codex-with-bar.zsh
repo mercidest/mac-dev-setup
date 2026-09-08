@@ -3,6 +3,7 @@
 # Headless Codex subcommands bypass tmux and call the real binary directly.
 
 setopt no_unset pipe_fail
+zmodload zsh/datetime
 
 readonly SELF="${0:A}"
 readonly USAGE_BAR="${CODEX_USAGE_BAR:-$HOME/bin/codex-usage}"
@@ -54,7 +55,17 @@ if [[ "${CODEX_NO_BAR:-0}" == "1" || ! -t 0 || ! -t 1 || ! -x "$USAGE_BAR" ]] ||
   exec "$REAL_CODEX" "$@"
 fi
 
-watch_command="${(q)USAGE_BAR} --watch 2"
+readonly LAUNCHED_AT="$EPOCHREALTIME"
+session_cwd="$PWD"
+for (( i = 1; i <= $#; i++ )); do
+  if [[ "${@[i]}" == "-C" || "${@[i]}" == "--cd" ]]; then
+    (( i++ ))
+    [[ $i -le $# ]] && session_cwd="${@[i]}"
+  elif [[ "${@[i]}" == --cd=* ]]; then
+    session_cwd="${@[i]#--cd=}"
+  fi
+done
+watch_command="${(q)USAGE_BAR} --watch 2 --since ${(q)LAUNCHED_AT} --cwd ${(q)session_cwd}"
 
 if [[ -n "${TMUX:-}" ]]; then
   watcher="$(tmux split-window -d -v -l 2 -c "$PWD" -P -F '#{pane_id}' "$watch_command")" || {
@@ -88,4 +99,3 @@ if ! tmux split-window -d -v -l 2 -t "$session":1.1 -c "$PWD" "$watch_command"; 
 fi
 tmux select-pane -t "$session":1.1
 tmux attach-session -t "$session"
-

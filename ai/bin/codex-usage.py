@@ -8,17 +8,22 @@ session file Codex is already writing:
     codex-usage
     [gpt-5.6-terra]  ctx ███░░░░░░░ 31%  5h ██░░░░░░░░ 18%  7d █████░░░░░ 46%
 
-Source of truth is the newest rollout under $CODEX_HOME/sessions/**, where Codex
-appends a `token_count` event per turn carrying `info.total_token_usage`,
+Source of truth is a rollout under $CODEX_HOME/sessions/**, where Codex appends
+a `token_count` event per turn carrying `info.last_token_usage`,
 `info.model_context_window` and `rate_limits`. Nothing is scraped and no network
-call is made, so this stays correct as long as Codex keeps writing its sessions.
+call is made.
 
 Usage:
   codex-usage                 render the newest session
   codex-usage --plain         no ANSI colors (for tmux, pipes, logs)
   codex-usage --watch [SECS]  redraw every SECS seconds (default 5)
   codex-usage --json          the raw numbers, for scripting
+  codex-usage --session PATH  render one exact rollout
+
+The launcher uses `--since EPOCH --cwd DIR` internally. That makes a new gauge
+wait for, and then remain attached to, the session that was just launched.
 """
+import datetime
 import glob
 import json
 import os
@@ -53,6 +58,46 @@ def newest_session():
     if not files:
         return None
     return max(files, key=os.path.getmtime)
+
+
+def session_started_at(path):
+    """Creation timestamp recorded by Codex in the rollout's first record."""
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            rec = json.loads(fh.readline())
+        stamp = rec.get("timestamp")
+        if not stamp:
+            return None
+        return datetime.datetime.fromisoformat(stamp.replace("Z", "+00:00")).timestamp()
+    except (OSError, ValueError, TypeError):
+        return None
+
+
+def session_cwd(path):
+    """Working directory recorded in the rollout's session_meta record."""
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            rec = json.loads(fh.readline())
+        return (rec.get("payload") or {}).get("cwd")
+    except (OSError, ValueError, TypeError):
+        return None
+
+
+def launched_session(since, cwd=None):
+    """Newest session created after `since`, optionally restricted by cwd."""
+    pattern = os.path.join(codex_home(), "sessions", "*", "*", "*", "rollout-*.jsonl")
+    matches = []
+    wanted_cwd = os.path.realpath(cwd) if cwd else None
+    for path in glob.glob(pattern):
+        started = session_started_at(path)
+        if started is None or started < since:
+            continue
+        if wanted_cwd:
+            actual_cwd = session_cwd(path)
+            if not actual_cwd or os.path.realpath(actual_cwd) != wanted_cwd:
+                continue
+        matches.append((started, path))
+    return max(matches)[1] if matches else None
 
 
 def tail_lines(path, limit=400):
@@ -115,7 +160,9 @@ def context_pct(info):
     """Percent of the context window in use, or None if the session is idle."""
     if not isinstance(info, dict):
         return None, None, None
-    usage = info.get("total_token_usage") or {}
+    # total_token_usage is the lifetime sum across every turn and compaction.
+    # last_token_usage is Codex's current-context figure for the latest turn.
+    usage = info.get("last_token_usage") or {}
     used = usage.get("total_tokens")
     if not used:
         return None, None, None
@@ -161,8 +208,8 @@ def limit_segments(limits):
     return out
 
 
-def collect():
-    path = newest_session()
+def collect(path=None):
+    path = path or newest_session()
     if not path:
         return None
     info, limits, model = read_session(path)
@@ -197,6 +244,27 @@ def render(data):
     return "  ".join(parts)
 
 
+def render_starting():
+    """Show empty context plus the latest account-wide limits until first turn."""
+    recent = collect()
+    if recent is None:
+        return f"{c(DIM)}codex: starting session…{c(RESET)}"
+    recent["model"] = "codex"
+    recent["context_percent"] = 0.0
+    recent["context_tokens"] = 0
+    return render(recent)
+
+
+def option_value(args, option, default=None):
+    if option not in args:
+        return default
+    idx = args.index(option)
+    try:
+        return args[idx + 1]
+    except IndexError:
+        raise SystemExit(f"codex-usage: {option} requires a value")
+
+
 def main():
     global PLAIN
     args = sys.argv[1:]
@@ -204,8 +272,27 @@ def main():
         print(__doc__.strip())
         return 0
     PLAIN = "--plain" in args or not sys.stdout.isatty()
+    exact_path = option_value(args, "--session")
+    since_text = option_value(args, "--since")
+    wanted_cwd = option_value(args, "--cwd")
+    try:
+        since = float(since_text) if since_text is not None else None
+    except ValueError:
+        raise SystemExit("codex-usage: --since must be a Unix timestamp")
+
+    def resolve(bound=None):
+        if bound:
+            return bound
+        if exact_path:
+            return os.path.expanduser(exact_path)
+        if since is not None:
+            return launched_session(since, wanted_cwd)
+        return newest_session()
+
     if "--json" in args:
-        print(json.dumps(collect(), indent=2))
+        path = resolve()
+        data = None if since is not None and not path else collect(path)
+        print(json.dumps(data, indent=2))
         return 0
     if "--watch" in args:
         idx = args.index("--watch")
@@ -213,15 +300,25 @@ def main():
             every = float(args[idx + 1])
         except (IndexError, ValueError):
             every = 5.0
+        bound_path = None
         try:
             while True:
-                sys.stdout.write("\r\033[2K" + render(collect()))
+                bound_path = resolve(bound_path)
+                if since is not None and not bound_path:
+                    output = render_starting()
+                else:
+                    output = render(collect(bound_path))
+                sys.stdout.write("\r\033[2K" + output)
                 sys.stdout.flush()
                 time.sleep(every)
         except KeyboardInterrupt:
             print()
         return 0
-    print(render(collect()))
+    path = resolve()
+    if since is not None and not path:
+        print(render_starting())
+    else:
+        print(render(collect(path)))
     return 0
 
 
