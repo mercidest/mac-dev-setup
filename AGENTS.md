@@ -13,7 +13,8 @@ own accounts**.
 
 ## Rules — read before doing anything
 
-1. **`./install.sh` does the work. Do not reimplement it.** Your job is to run
+1. **`./install.sh` does the work. Do not reimplement it.** If the user wants only
+   part of the setup, use `--only <sections>` rather than running loose commands. Your job is to run
    it, read its output, and fix what it reports. Do not hand-write `brew install`
    sequences or `cp` commands that duplicate what the script already does.
 2. **Never ask for, generate, echo, or store a credential.** No API keys, no
@@ -40,8 +41,12 @@ uname -m          # arm64 expected; on x86_64 Homebrew lives in /usr/local, warn
 
 #    Variants, if the user asks:
 ./install.sh --no-optional      # skip Anaconda (~1 GB)
-./install.sh --only claude      # one section: brew shell tmux iterm2 sublime python node claude ai
+./install.sh --only codex       # one section only — sections are independent
+./install.sh --only "shell tmux"  # several
 ./install.sh --list             # section names
+
+# Sections: brew shell tmux iterm2 sublime python node claude codex pi opencode
+# ("ai" is shorthand for codex + pi + opencode)
 ```
 
 Then verify, and report the result of each line:

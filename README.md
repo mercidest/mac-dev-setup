@@ -78,11 +78,24 @@ rewrite their own files and symlinks would dirty this checkout on every change.
 
 ### Partial installs
 
+Sections are independent, so you can take only the parts you want:
+
 ```sh
-./install.sh --list                 # brew shell tmux iterm2 sublime python node claude ai
-./install.sh --only claude          # one section
-./install.sh --no-optional          # skip Anaconda
+./install.sh --list                 # every section name
+./install.sh --only codex           # just Codex CLI + its usage bar (2 files)
+./install.sh --only claude          # just Claude Code
+./install.sh --only "shell tmux"    # several at once
+./install.sh --only ai              # shorthand for codex + pi + opencode
+./install.sh --no-optional          # everything, minus Anaconda
 ./install.sh --no-brew              # tools already installed
+```
+
+Sections: `brew shell tmux iterm2 sublime python node claude codex pi opencode`.
+
+Straight from the URL, without cloning first:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/mercidest/mac-dev-setup/main/bootstrap.sh | bash -s -- --only codex
 ```
 
 ---

@@ -5,10 +5,11 @@
 #   ./install.sh                  everything
 #   ./install.sh --no-brew        skip Homebrew installs (tools already present)
 #   ./install.sh --no-optional    skip Brewfile.optional (Anaconda, ~1 GB)
-#   ./install.sh --only claude    just one section
+#   ./install.sh --only codex     just one section (e.g. Codex CLI + its usage bar)
 #   ./install.sh --list           show section names and exit
 #
-# Sections: brew shell tmux iterm2 sublime python node claude ai
+# Sections: brew shell tmux iterm2 sublime python node claude codex pi opencode
+#           ("ai" is shorthand for codex + pi + opencode)
 #
 # Safe to re-run. Anything it replaces is backed up next to the original as
 # <file>.backup.<timestamp>. It installs no credentials: you sign in to each
@@ -17,7 +18,7 @@ set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STAMP="$(date +%Y%m%d%H%M%S)"
-SECTIONS="brew shell tmux iterm2 sublime python node claude ai"
+SECTIONS="brew shell tmux iterm2 sublime python node claude codex pi opencode"
 DO_OPTIONAL=1
 ONLY=""
 
@@ -26,17 +27,20 @@ while [ $# -gt 0 ]; do
     --no-brew)     SECTIONS="${SECTIONS/brew /}" ;;
     --no-optional) DO_OPTIONAL=0 ;;
     --only)        shift; ONLY="${1:-}"; [ -n "$ONLY" ] || { echo "--only needs a section name" >&2; exit 2; } ;;
-    --list)        echo "$SECTIONS" | tr ' ' '\n'; exit 0 ;;
+    --list)        echo "$SECTIONS" | tr ' ' '\n'; echo 'ai  (= codex pi opencode)'; exit 0 ;;
     -h|--help)     sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *)             echo "unknown option: $1 (try --help)" >&2; exit 2 ;;
   esac
   shift
 done
 if [ -n "$ONLY" ]; then
+  ONLY="${ONLY//ai/codex pi opencode}"     # `ai` is shorthand for all three harnesses
   for want in $ONLY; do
-    case " brew shell tmux iterm2 sublime python node claude ai " in
+    case " brew shell tmux iterm2 sublime python node claude codex pi opencode " in
       *" $want "*) ;;
-      *) echo "unknown section: $want" >&2; echo "known: brew shell tmux iterm2 sublime python node claude ai" >&2; exit 2 ;;
+      *) echo "unknown section: $want" >&2
+         echo "known: brew shell tmux iterm2 sublime python node claude codex pi opencode (or: ai)" >&2
+         exit 2 ;;
     esac
   done
   SECTIONS="$ONLY"
@@ -70,6 +74,16 @@ copy() {
   local src="$REPO/$1" dst="$2"
   if [ -f "$dst" ] && cmp -s "$src" "$dst"; then skip "$(basename "$dst") already current"; return; fi
   backup "$dst"; mkdir -p "$(dirname "$dst")"; cp "$src" "$dst"; ok "$(basename "$dst") installed"
+}
+
+# create ~/.ai-keys.env (empty, chmod 600) — never writes a key
+seed_keys_file() {
+  if [ -f "$HOME/.ai-keys.env" ]; then
+    chmod 600 "$HOME/.ai-keys.env"; skip "~/.ai-keys.env exists (permissions tightened)"
+  else
+    cp "$REPO/ai/ai-keys.env.example" "$HOME/.ai-keys.env"; chmod 600 "$HOME/.ai-keys.env"
+    ok "~/.ai-keys.env created (empty — add your OpenRouter key)"
+  fi
 }
 
 # ---------------------------------------------------------------- 1. Homebrew
@@ -193,33 +207,58 @@ if has claude; then
   done
 fi
 
-# ------------------------------------------------- 9. other AI harnesses + bar
-if has ai; then
-  say "AI harnesses (Codex, Pi, OpenCode) + usage bar"
+# ----------------------------------------------------- 9. Codex CLI + its bar
+if has codex; then
+  say "Codex CLI + usage bar"
+  if ! command -v codex >/dev/null; then
+    if command -v brew >/dev/null; then brew install codex && ok "codex installed"
+    else warn "Homebrew missing — install it first, then: brew install codex"; fi
+  fi
+  command -v codex >/dev/null && ok "codex $(codex --version 2>/dev/null || echo installed)"
+
   mkdir -p "$HOME/bin"
   cp "$REPO/ai/bin/codex-usage.py" "$HOME/bin/codex-usage"
   chmod +x "$HOME/bin/codex-usage"
-  ok "codex-usage installed to ~/bin (alias: usage)"
+  ok "codex-usage → ~/bin/codex-usage"
+  case ":$PATH:" in
+    *":$HOME/bin:"*) ;;
+    *) warn "~/bin is not on your PATH. Either add it:"
+       warn "  echo 'export PATH=\"\$HOME/bin:\$PATH\"' >> ~/.zshrc && exec zsh"
+       warn "or just run it by full path: ~/bin/codex-usage" ;;
+  esac
 
-  # Codex: only seed config.toml if absent — Codex rewrites this file at runtime
-  # with machine-specific plugin paths, so we must never clobber a live one.
+  # Codex rewrites config.toml at runtime with machine-specific plugin paths,
+  # so seed it only when there is nothing to lose.
   if [ -f "$HOME/.codex/config.toml" ]; then
     skip "~/.codex/config.toml exists — left alone (compare with ai/codex/config.toml)"
   else
     mkdir -p "$HOME/.codex"; cp "$REPO/ai/codex/config.toml" "$HOME/.codex/config.toml"
     ok "~/.codex/config.toml seeded"
   fi
+fi
 
-  copy ai/opencode/opencode.jsonc "$HOME/.config/opencode/opencode.jsonc"
-  copy ai/pi/models.json          "$HOME/.pi/agent/models.json"
-
-  if [ -f "$HOME/.ai-keys.env" ]; then
-    chmod 600 "$HOME/.ai-keys.env"; skip "~/.ai-keys.env exists (permissions tightened)"
+# ------------------------------------------------------------------- 10. Pi
+if has pi; then
+  say "Pi"
+  if command -v npm >/dev/null; then
+    command -v pi >/dev/null || npm install -g @earendil-works/pi-coding-agent >/dev/null
+    command -v pi >/dev/null && ok "pi $(pi --version 2>/dev/null || echo installed)"
   else
-    cp "$REPO/ai/ai-keys.env.example" "$HOME/.ai-keys.env"
-    chmod 600 "$HOME/.ai-keys.env"
-    ok "~/.ai-keys.env created (empty — add your OpenRouter key)"
+    warn "npm missing (brew install node)"
   fi
+  copy ai/pi/models.json "$HOME/.pi/agent/models.json"
+  seed_keys_file
+fi
+
+# ------------------------------------------------------------- 11. OpenCode
+if has opencode; then
+  say "OpenCode"
+  if ! command -v opencode >/dev/null && command -v brew >/dev/null; then
+    brew install opencode && ok "opencode installed"
+  fi
+  command -v opencode >/dev/null && ok "opencode $(opencode --version 2>/dev/null || echo installed)"
+  copy ai/opencode/opencode.jsonc "$HOME/.config/opencode/opencode.jsonc"
+  seed_keys_file
 fi
 
 if [ -n "$ONLY" ]; then

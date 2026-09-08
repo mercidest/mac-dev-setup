@@ -82,6 +82,16 @@ Claude Code renders its own statusline (`../claude/statusline-usage.py`) showing
 context window plus 5-hour and 7-day plan limits. **Codex CLI has no equivalent** —
 so there are two ways to get one.
 
+Want only this, on a machine you are not otherwise reconfiguring?
+
+```sh
+./install.sh --only codex
+```
+
+That installs the Codex CLI (via Homebrew, if missing), writes `~/bin/codex-usage`,
+and seeds `~/.codex/config.toml` only if you don't already have one. It touches
+nothing else — no shell config, no other harness.
+
 ### 1. `codex-usage` — the same bar, in your terminal
 
 `bin/codex-usage.py`, installed as `codex-usage` in `~/bin`:
