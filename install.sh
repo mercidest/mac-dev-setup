@@ -258,7 +258,15 @@ if has pi; then
   else
     warn "npm missing (brew install node)"
   fi
-  copy ai/pi/models.json "$HOME/.pi/agent/models.json"
+  # Merge, never replace: a provider you configured yourself survives re-runs.
+  # See ai/pi/merge-models.py. Exit 10 means "nothing to add".
+  merge_out=$(/usr/bin/python3 "$REPO/ai/pi/merge-models.py" \
+                "$REPO/ai/pi/models.json" "$HOME/.pi/agent/models.json" 2>&1)
+  case $? in
+    0)  ok   "models.json: $merge_out" ;;
+    10) skip "models.json: $merge_out" ;;
+    *)  warn "models.json NOT updated: $merge_out" ;;
+  esac
 
   # oh-my-pi is a Pi *extension*, not a standalone CLI. Its published
   # bin/oh-my-pi.js ships uncompiled TypeScript and crashes if run directly, so

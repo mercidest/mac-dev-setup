@@ -66,9 +66,32 @@ pi                              # interactive
 pi --help                       # flags, including JSONL output
 ```
 
-`pi/models.json` → `~/.pi/agent/models.json` defines which OpenRouter models it
-offers. Edit that list freely; re-check ids against <https://openrouter.ai/models>
-because OpenRouter retires models without notice.
+`pi/models.json` defines which OpenRouter models Pi offers. Edit that list
+freely; re-check ids against <https://openrouter.ai/models> because OpenRouter
+retires models without notice.
+
+**It is merged into `~/.pi/agent/models.json`, never copied over it.** Pi's model
+file is somewhere you configure things — a private base URL, your own model list,
+a different key source — so `install.sh` runs `pi/merge-models.py`, whose rule is
+one-way:
+
+> a provider you already have is never touched; only missing ones are added.
+
+So re-running `--only pi` on a machine where you have configured, say, an
+`opencode-go` provider adds `openrouter` alongside it and leaves yours exactly as
+it was, key indirection included. A second run reports "already present" and does
+not write at all. A backup is taken only when something actually changes, and the
+write is atomic, so an interrupted run cannot leave you a half-written config.
+
+Two consequences worth knowing:
+
+- **Repo updates to an existing provider do not reach you.** If `openrouter` here
+  gains models and you already have an `openrouter` block, yours wins. Take the
+  new one with `PI_MODELS_FORCE=1 ./install.sh --only pi` (it backs up first), or
+  delete your block and re-run.
+- **A `models.json` that is not valid JSON is refused, not repaired.** The script
+  leaves it untouched and `install.sh` prints a warning, on the grounds that a
+  hand-edited file you can still fix beats one silently replaced.
 
 ### oh-my-pi — an extension, not a CLI
 
