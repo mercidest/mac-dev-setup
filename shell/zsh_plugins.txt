@@ -1,0 +1,4 @@
+# antidote plugin bundle (pure prompt is loaded separately via promptinit in .zshrc)
+zsh-users/zsh-autosuggestions
+zsh-users/zsh-completions
+zdharma-continuum/fast-syntax-highlighting

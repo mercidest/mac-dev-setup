@@ -1,0 +1,6 @@
+# Sourced by EVERY zsh invocation, including non-login/non-interactive shells
+# such as `ssh host -- command`. This is what lets mosh find mosh-server when
+# Mochi (or `mosh`) connects over SSH+Tailscale. Keep this minimal.
+if [[ ":$PATH:" != *":/opt/homebrew/bin:"* ]]; then
+  export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
+fi
