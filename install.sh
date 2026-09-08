@@ -259,6 +259,30 @@ if has pi; then
     warn "npm missing (brew install node)"
   fi
   copy ai/pi/models.json "$HOME/.pi/agent/models.json"
+
+  # oh-my-pi is a Pi *extension*, not a standalone CLI. Its published
+  # bin/oh-my-pi.js ships uncompiled TypeScript and crashes if run directly, so
+  # `npm i -g oh-my-pi` gives you a broken binary. `pi install` registers it the
+  # way the extension expects.
+  if command -v pi >/dev/null; then
+    if pi list 2>/dev/null | grep -q "npm:oh-my-pi"; then
+      skip "oh-my-pi already registered"
+    else
+      pi install npm:oh-my-pi >/dev/null 2>&1 \
+        && ok "oh-my-pi extension registered" \
+        || warn "oh-my-pi install failed (pi install npm:oh-my-pi)"
+    fi
+
+    # oh-my-pi registers ".oh-my-pi/skills/" as a CWD-RELATIVE skill path, so Pi
+    # reports "[Skill conflicts] skill path does not exist" in every directory
+    # that lacks it. Harmless (the bundled skills load from the package), but it
+    # is noise on every launch. Creating it under $HOME clears it where Pi is
+    # most often started; per-project dirs are yours to add if you want
+    # project-local skills.
+    mkdir -p "$HOME/.oh-my-pi/skills"
+    ok "~/.oh-my-pi/skills (silences Pi's cwd-relative skill-path warning)"
+  fi
+
   seed_keys_file
 fi
 

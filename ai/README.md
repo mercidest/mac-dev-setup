@@ -70,6 +70,66 @@ pi --help                       # flags, including JSONL output
 offers. Edit that list freely; re-check ids against <https://openrouter.ai/models>
 because OpenRouter retires models without notice.
 
+### oh-my-pi — an extension, not a CLI
+
+[oh-my-pi](https://github.com/acidsugarx/oh-my-pi) layers nine skills
+(`code-review`, `debugging`, `refactor`, `security-review`…) and an orchestrator
+prompt on top of Pi. Install it **through Pi**, never globally:
+
+```sh
+pi install npm:oh-my-pi          # correct — registers it in ~/.pi/settings
+npm i -g oh-my-pi                # WRONG — ships a broken binary
+```
+
+The published `bin/oh-my-pi.js` contains uncompiled TypeScript and dies on
+`SyntaxError` the moment you run it. The package's real entry point is
+`dist/extension.js`, which is what `pi install` wires up. Treat the project as
+low-provenance: single maintainer, three releases, untouched since June 2026.
+
+### The `[Skill conflicts]` warning is harmless
+
+Pi prints this at startup and it is **not an error**:
+
+```text
+[Skill conflicts]
+  ~/.oh-my-pi/skills
+    skill path does not exist
+```
+
+oh-my-pi registers two skill paths (`dist/extension.js:1816`): the package's own
+`skills/` directory, and the string `.oh-my-pi/skills/`. That second one is
+**relative**, and Pi resolves it against the current working directory
+(`dist/core/skills.js:373`, `resolvePath(rawPath, resolvedCwd)`). So Pi reports it
+missing in every directory that doesn't happen to have one. The bundled skills
+load fine regardless — that's the `[Skills]` line directly above the warning.
+
+The only condition is `existsSync`, so creating the directory silences it:
+
+```sh
+mkdir -p ~/.oh-my-pi/skills      # done by install.sh; clears it when Pi starts from $HOME
+```
+
+Because the path is cwd-relative, the warning returns in any project directory
+without one. Only create it in a repo where you are actually writing a
+project-local skill — git cannot track an empty directory, so an empty one would
+never survive a clone anyway.
+
+### tmux: `extended-keys-format` must be `csi-u`
+
+Pi warns if tmux is left on the default. Note this is a *different* option from
+`extended-keys on` — setting one does not set the other. `tmux/tmux.conf` now sets
+both. Editing the file does not touch an already-running server, so also run:
+
+```sh
+tmux set -g extended-keys-format csi-u     # applies live, keeps sessions intact
+```
+
+### Package scope moved
+
+Pi is published as `@earendil-works/pi-coding-agent`. The older
+`@mariozechner/*` packages are deprecated and only re-export it — install from
+the new scope.
+
 ## OpenCode
 
 ```sh
@@ -80,6 +140,36 @@ opencode                        # TUI
 
 `opencode/opencode.jsonc` → `~/.config/opencode/opencode.jsonc` adds OpenRouter as
 a second provider alongside whatever you log into.
+
+### If `opencode auth login` returns `Invalid authorization code`
+
+```json
+{"error":"Invalid authorization code","cause":{"code":"…","state":"…"}}
+```
+
+Usual cause is a second, still-running `opencode auth login` holding the callback
+listener: the browser redirect lands in a process whose PKCE verifier is not the
+one that built the URL you clicked. Clear the strays and do the whole flow in one
+pass, without reloading the browser tab:
+
+```sh
+pkill -f "opencode auth login"
+opencode auth login
+```
+
+Also worth checking: Homebrew's `opencode` can trail the npm release by several
+patch versions, so `brew upgrade opencode` is a reasonable second move.
+
+To swap a pasted key for an account login, remove the old credential first —
+`opencode auth list` shows `type=api` for a pasted key and `type=oauth` for an
+account login:
+
+```sh
+opencode auth logout opencode    # unrecoverable; keep the key elsewhere if you need it
+opencode auth login
+```
+
+Note an `OPENROUTER_API_KEY` in the environment shadows what you log in with.
 
 ---
 
