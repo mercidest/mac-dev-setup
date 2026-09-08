@@ -216,15 +216,26 @@ if has codex; then
   fi
   command -v codex >/dev/null && ok "codex $(codex --version 2>/dev/null || echo installed)"
 
+  if ! command -v tmux >/dev/null; then
+    if command -v brew >/dev/null; then brew install tmux && ok "tmux installed (Codex bar host)"
+    else warn "tmux missing — Codex will run without the attached graphical bar"; fi
+  fi
+
   mkdir -p "$HOME/bin"
-  cp "$REPO/ai/bin/codex-usage.py" "$HOME/bin/codex-usage"
+  copy ai/bin/codex-usage.py "$HOME/bin/codex-usage"
   chmod +x "$HOME/bin/codex-usage"
   ok "codex-usage → ~/bin/codex-usage"
+  copy ai/bin/codex-with-bar.zsh "$HOME/bin/codex"
+  chmod +x "$HOME/bin/codex"
+  ok "codex launcher → ~/bin/codex"
   case ":$PATH:" in
     *":$HOME/bin:"*) ;;
-    *) warn "~/bin is not on your PATH. Either add it:"
-       warn "  echo 'export PATH=\"\$HOME/bin:\$PATH\"' >> ~/.zshrc && exec zsh"
-       warn "or just run it by full path: ~/bin/codex-usage" ;;
+    *) if ! grep -Fq 'export PATH="$HOME/bin:$PATH"' "$HOME/.zshrc" 2>/dev/null; then
+         [ -f "$HOME/.zshrc" ] && cp "$HOME/.zshrc" "$HOME/.zshrc.backup.$STAMP"
+         printf '\n# Codex launcher and usage bar\nexport PATH="$HOME/bin:$PATH"\n' >> "$HOME/.zshrc"
+         ok "~/bin added to PATH in ~/.zshrc"
+       fi
+       export PATH="$HOME/bin:$PATH" ;;
   esac
 
   # Codex rewrites config.toml at runtime with machine-specific plugin paths,

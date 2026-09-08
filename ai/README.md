@@ -96,11 +96,28 @@ Want only this, on a machine you are not otherwise reconfiguring?
 ./install.sh --only codex
 ```
 
-That installs the Codex CLI (via Homebrew, if missing), writes `~/bin/codex-usage`,
+That installs the Codex CLI and its small tmux dependency (via Homebrew, if
+missing), writes `~/bin/codex` plus `~/bin/codex-usage`, adds `~/bin` to PATH,
 and seeds `~/.codex/config.toml` only if you don't already have one. It installs
-no other harness and does not change shell config.
+no other AI harness.
 
-### 1. Native Codex status line — always visible in a session
+### 1. Automatic graphical bar — just run `codex`
+
+`~/bin/codex` is a lightweight launcher around the real Homebrew binary. For an
+interactive session it creates a two-line tmux pane beneath Codex and runs the
+usage gauge there, refreshing every two seconds. The pane disappears when Codex
+exits. If you are already inside tmux, it adds and removes the pane in the
+current window.
+
+```text
+[gpt-5.6-sol]  ctx ████░░░░░░ 35%  5h ██░░░░░░░░ 18%  7d █████░░░░░ 46%
+```
+
+Commands such as `codex login`, `codex exec`, `codex doctor`, and
+`codex --version` bypass the launcher UI and behave normally. To bypass the bar
+for one interactive run, use `CODEX_NO_BAR=1 codex`.
+
+### 2. Native Codex status line — percentage-only fallback
 
 The seeded config enables these items:
 
@@ -121,7 +138,7 @@ already existed when the installer ran, it is deliberately preserved; open
 Codex and run `/statusline` to select Context remaining, 5-hour limit, and
 Weekly limit interactively.
 
-### 2. `codex-usage` — graphical bars outside Codex
+### 3. `codex-usage` — graphical bars outside Codex
 
 `bin/codex-usage.py`, installed as `codex-usage` in `~/bin`:
 
@@ -153,7 +170,7 @@ set -g status-interval 15
 set -ag status-right '#[fg=#7aa2f7]#(~/bin/codex-usage --plain)#[default] '
 ```
 
-### 3. CodexBar — a menu-bar readout for everything at once
+### 4. CodexBar — a menu-bar readout for everything at once
 
 `brew install codexbar` (in the Brewfile) puts a live usage readout in the macOS
 menu bar and covers ~50 providers, Codex, Claude, OpenCode and OpenRouter included.
