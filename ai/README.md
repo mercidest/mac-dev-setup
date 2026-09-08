@@ -6,7 +6,7 @@ installed by `../install.sh`; this file explains what each one is and how to sig
 | Harness | Install | Sign in | Billing |
 |---|---|---|---|
 | **Claude Code** | `curl -fsSL https://claude.ai/install.sh \| bash` | `claude` → browser | Your Claude Pro/Max plan |
-| **Codex CLI** | `brew install codex` | `codex login` → browser | Your ChatGPT plan |
+| **Codex CLI** | `brew install --cask codex` | `codex login` → browser | Your ChatGPT plan |
 | **Pi** | `npm i -g @earendil-works/pi-coding-agent` | key in `~/.ai-keys.env` | Pay-per-token via OpenRouter |
 | **OpenCode** | `brew install opencode` | `opencode auth login` | OpenCode Zen, or OpenRouter |
 | **Gemini CLI** | `npm i -g @google/gemini-cli` | `gemini` → browser | Google account free tier |
@@ -79,8 +79,9 @@ a second provider alongside whatever you log into.
 ## Usage bars
 
 Claude Code renders its own statusline (`../claude/statusline-usage.py`) showing
-context window plus 5-hour and 7-day plan limits. **Codex CLI has no equivalent** —
-so there are two ways to get one.
+context window plus 5-hour and 7-day plan limits. Current Codex CLI releases can
+show the same information in their native status line; this repo also includes a
+graphical standalone bar for shells and tmux.
 
 Want only this, on a machine you are not otherwise reconfiguring?
 
@@ -89,10 +90,31 @@ Want only this, on a machine you are not otherwise reconfiguring?
 ```
 
 That installs the Codex CLI (via Homebrew, if missing), writes `~/bin/codex-usage`,
-and seeds `~/.codex/config.toml` only if you don't already have one. It touches
-nothing else — no shell config, no other harness.
+and seeds `~/.codex/config.toml` only if you don't already have one. It installs
+no other harness and does not change shell config.
 
-### 1. `codex-usage` — the same bar, in your terminal
+### 1. Native Codex status line — always visible in a session
+
+The seeded config enables these items:
+
+```toml
+[tui]
+status_line = ["model-with-reasoning", "current-dir", "context-remaining", "five-hour-limit", "weekly-limit"]
+status_line_use_colors = true
+```
+
+Example:
+
+```
+gpt-5.6-sol high · ~/project · Context 82% left · 5h 95% left · weekly 99% left
+```
+
+Codex omits a limit until that value is available. If `~/.codex/config.toml`
+already existed when the installer ran, it is deliberately preserved; open
+Codex and run `/statusline` to select Context remaining, 5-hour limit, and
+Weekly limit interactively.
+
+### 2. `codex-usage` — graphical bars outside Codex
 
 `bin/codex-usage.py`, installed as `codex-usage` in `~/bin`:
 
@@ -124,7 +146,7 @@ set -g status-interval 15
 set -ag status-right '#[fg=#7aa2f7]#(~/bin/codex-usage --plain)#[default] '
 ```
 
-### 2. CodexBar — a menu-bar readout for everything at once
+### 3. CodexBar — a menu-bar readout for everything at once
 
 `brew install codexbar` (in the Brewfile) puts a live usage readout in the macOS
 menu bar and covers ~50 providers, Codex, Claude, OpenCode and OpenRouter included.
@@ -136,4 +158,4 @@ codexbar usage --provider openrouter          # credits remaining
 
 Its per-provider fetchers depend on being logged in to each service and on those
 services' dashboards, so individual providers can return errors while others work.
-That is why `codex-usage` exists as the offline, always-correct fallback for Codex.
+That is why `codex-usage` remains as an offline fallback for Codex.

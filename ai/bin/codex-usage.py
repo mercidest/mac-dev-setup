@@ -1,9 +1,9 @@
 #!/usr/bin/python3
-"""A context-window and rate-limit bar for the Codex CLI.
+"""A standalone context-window and rate-limit bar for the Codex CLI.
 
-Codex CLI has no statusline of its own, so this reads the numbers out of the
-session file Codex is already writing and renders them the same way the Claude
-Code statusline does:
+Codex has a native in-session status line for percentage readouts. This helper
+adds graphical bars outside Codex (including tmux), reading the numbers from the
+session file Codex is already writing:
 
     codex-usage
     [gpt-5.6-terra]  ctx ███░░░░░░░ 31%  5h ██░░░░░░░░ 18%  7d █████░░░░░ 46%

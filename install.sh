@@ -207,12 +207,12 @@ if has claude; then
   done
 fi
 
-# ----------------------------------------------------- 9. Codex CLI + its bar
+# ------------------------------------------- 9. Codex CLI + its usage displays
 if has codex; then
-  say "Codex CLI + usage bar"
+  say "Codex CLI + usage displays"
   if ! command -v codex >/dev/null; then
-    if command -v brew >/dev/null; then brew install codex && ok "codex installed"
-    else warn "Homebrew missing — install it first, then: brew install codex"; fi
+    if command -v brew >/dev/null; then brew install --cask codex && ok "codex installed"
+    else warn "Homebrew missing — install it first, then: brew install --cask codex"; fi
   fi
   command -v codex >/dev/null && ok "codex $(codex --version 2>/dev/null || echo installed)"
 
@@ -231,6 +231,7 @@ if has codex; then
   # so seed it only when there is nothing to lose.
   if [ -f "$HOME/.codex/config.toml" ]; then
     skip "~/.codex/config.toml exists — left alone (compare with ai/codex/config.toml)"
+    skip "Inside Codex, run /statusline to add context, 5-hour and weekly limits"
   else
     mkdir -p "$HOME/.codex"; cp "$REPO/ai/codex/config.toml" "$HOME/.codex/config.toml"
     ok "~/.codex/config.toml seeded"
