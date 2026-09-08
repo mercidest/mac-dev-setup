@@ -86,22 +86,26 @@ The published `bin/oh-my-pi.js` contains uncompiled TypeScript and dies on
 `dist/extension.js`, which is what `pi install` wires up. Treat the project as
 low-provenance: single maintainer, three releases, untouched since June 2026.
 
-### The `[Skill conflicts]` warning is harmless
+### `[Skill conflicts]` — two different diagnostics under one heading
 
-Pi prints this at startup and it is **not an error**:
+Pi groups two unrelated things under this heading, and only one of them is
+oh-my-pi's doing. Neither is an error. Knowing which you are looking at matters,
+because `install.sh` silences the first and **cannot** silence the second.
+
+#### 1. "skill path does not exist" — silenced by install.sh
 
 ```text
 [Skill conflicts]
-  ~/.oh-my-pi/skills
+  /some/project/.oh-my-pi/skills
     skill path does not exist
 ```
 
-oh-my-pi registers two skill paths (`dist/extension.js:1816`): the package's own
+oh-my-pi registers two skill paths (`dist/extension.js`): the package's own
 `skills/` directory, and the string `.oh-my-pi/skills/`. That second one is
 **relative**, and Pi resolves it against the current working directory
-(`dist/core/skills.js:373`, `resolvePath(rawPath, resolvedCwd)`). So Pi reports it
-missing in every directory that doesn't happen to have one. The bundled skills
-load fine regardless — that's the `[Skills]` line directly above the warning.
+(`dist/core/skills.js`, `resolvePath(rawPath, resolvedCwd)`), so Pi reports it
+missing in every directory that lacks one. The bundled skills load fine
+regardless — that is the `[Skills]` line above the warning.
 
 The only condition is `existsSync`, so creating the directory silences it:
 
@@ -109,10 +113,40 @@ The only condition is `existsSync`, so creating the directory silences it:
 mkdir -p ~/.oh-my-pi/skills      # done by install.sh; clears it when Pi starts from $HOME
 ```
 
-Because the path is cwd-relative, the warning returns in any project directory
-without one. Only create it in a repo where you are actually writing a
+Verified on a clean machine: from `$HOME` the line is gone; from a directory
+without one it comes back, naming that directory. Because the path is
+cwd-relative, only create it in a repo where you are actually writing a
 project-local skill — git cannot track an empty directory, so an empty one would
 never survive a clone anyway.
+
+#### 2. Name collisions — expected, and not silenced
+
+```text
+[Skill conflicts]
+  "code-review" collision:
+    ✓ auto (user) ~/.agents/skills/code-review/SKILL.md
+    ✗ ~/.pi/agent/npm/node_modules/oh-my-pi/skills/code-review.md (skipped)
+```
+
+oh-my-pi ships nine skills with ordinary names — `code-review`, `debugging`,
+`refactor`, `security-review` — and several collide with skills you already have.
+Pi resolves each collision by **keeping the higher-priority one and skipping the
+rest**; the `✓` marks the winner. Your own skill wins over a package's.
+
+So **`[Skill conflicts]` will still appear after install** if any name overlaps.
+That is the system working, not a failure. Nothing is broken and no skill is
+lost — the losing file is simply not loaded. If you would rather Pi stop
+mentioning it, resolve the overlap: rename your skill, or turn off oh-my-pi's
+copy with `pi config` (Tab switches scope).
+
+Two cosmetic quirks worth recognising so you don't go hunting for a bug:
+
+- The skipped file is often listed **twice**. oh-my-pi's `skills/` directory is
+  registered both by `package.json`'s `pi.skills` field and again by the
+  extension, so Pi sees the same path from two sources and reports each.
+- The `[Skill conflicts]` heading is a TUI widget, not a stdout line. Piping Pi's
+  output to a file shows nothing — you need a real terminal (or
+  `tmux capture-pane`) to see it.
 
 ### tmux: `extended-keys-format` must be `csi-u`
 
