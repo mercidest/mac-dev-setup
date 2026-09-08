@@ -1,0 +1,25 @@
+# Codex CLI config — installed to ~/.codex/config.toml by install.sh.
+#
+# Only the portable parts are here. Codex writes plenty of machine-specific
+# state into this same file at runtime (bundled-plugin paths under
+# /Applications/ChatGPT.app, per-project trust levels, computer-use app paths).
+# Those are generated on first run; do not copy them between machines.
+
+model = "gpt-5.6-terra"
+model_reasoning_effort = "medium"
+
+# The same two skill marketplaces the Claude Code config enables, so both
+# harnesses offer the same skills.
+[marketplaces.karpathy-skills]
+source_type = "git"
+source = "https://github.com/forrestchang/andrej-karpathy-skills.git"
+
+[marketplaces.mattpocock]
+source_type = "git"
+source = "https://github.com/mattpocock/skills.git"
+
+[plugins."andrej-karpathy-skills@karpathy-skills"]
+enabled = true
+
+[plugins."mattpocock-skills@mattpocock"]
+enabled = true

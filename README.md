@@ -1,7 +1,19 @@
 # mac-dev-setup
 
-My terminal + Claude Code environment, packaged so a fresh Mac ends up looking and
-behaving the same. Built for **macOS on Apple Silicon** with **iTerm2**.
+A complete developer environment for a fresh Mac — terminal, editor, toolchains
+and five AI coding agents — reproducible from this repo alone. Built for
+**macOS on Apple Silicon**.
+
+## Install
+
+One command, on a machine with nothing on it:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/mercidest/mac-dev-setup/main/bootstrap.sh | bash
+```
+
+That installs the Xcode command line tools if needed, clones this repo to
+`~/mac-dev-setup`, and runs the installer. Or do it by hand:
 
 ```sh
 git clone https://github.com/mercidest/mac-dev-setup.git
@@ -9,127 +21,147 @@ cd mac-dev-setup
 ./install.sh
 ```
 
-Re-runnable. Anything it replaces is backed up next to the original as
-`<file>.backup.<timestamp>`.
+### Or let an AI agent do it
 
-> **It contains no logins, tokens or keys.** After installing, you run `claude` and
-> sign in with **your own** Claude account. Same for `gh auth login` and your git
-> identity. Nothing here is shared credentials.
+If you already have a coding agent on the machine, point it at this repo and it
+will follow [`AGENTS.md`](AGENTS.md) — a runbook written for exactly that:
+
+> Set up this Mac from https://github.com/mercidest/mac-dev-setup — follow AGENTS.md.
+
+`AGENTS.md` is read by Codex CLI and OpenCode; Claude Code reads the same file
+through `CLAUDE.md`. It tells the agent to run `install.sh` rather than improvise,
+and lists what it must leave to you (every sign-in, every key).
+
+Re-running is safe. Anything replaced is backed up as `<file>.backup.<timestamp>`.
+
+> **No credentials are in this repo.** You sign in to each service with your own
+> account afterwards. Nothing here is shared logins.
 
 ---
 
 ## What you get
 
-| Piece | What it is |
+| | |
 |---|---|
-| **Claude Code statusline** | A live bar for context window, 5-hour and 7-day plan usage — the numbers `/usage` shows, always on screen |
-| **Claude Code settings** | `auto` theme, fullscreen TUI, `high` effort, two skill marketplaces auto-installed |
-| **Claude Code skills** | `commit`, `pr`, `fix-tests`, `new-skill` — plus Karpathy's and Matt Pocock's skill packs from GitHub |
-| **iTerm2** | Snazzy colors (`#282A36`) + JetBrainsMono Nerd Font 15, as a drop-in profile |
-| **zsh** | oh-my-zsh + antidote + the Pure prompt, autosuggestions, syntax highlighting |
-| **CLI tools** | `eza`, `bat`, `ripgrep`, `fd`, `fzf`, `zoxide`, `atuin` — aliased over `ls`/`cat`/`grep`/`find` |
-| **tmux** | Tokyo-Night status bar, `Ctrl-Space` prefix, and a unique color per session |
+| **Terminal** | iTerm2, Snazzy (`#282A36`), JetBrainsMono Nerd Font 15 |
+| **Shell** | zsh + oh-my-zsh + antidote + Pure prompt, autosuggestions, syntax highlighting |
+| **CLI tools** | `eza` `bat` `ripgrep` `fd` `fzf` `zoxide` `atuin`, aliased over `ls`/`cat`/`grep`/`find` |
+| **Multiplexer** | tmux with a Tokyo-Night bar, `Ctrl-Space` prefix, a unique color per session |
+| **Editor** | Sublime Text 4 — Material Theme, rulers, linting, `subl` on PATH |
+| **Python** | `uv` for projects, Anaconda optional, and the rule for which of the three Pythons to use |
+| **Node** | Homebrew node + `pnpm`, global packages from a list |
+| **AI agents** | Claude Code, Codex CLI, Pi, OpenCode, Gemini CLI |
+| **Usage bars** | Claude Code's statusline, plus `codex-usage` — the equivalent Codex is missing |
 
 ## Layout
 
 ```
 mac-dev-setup/
-├── install.sh        the one command that does everything
-├── Brewfile          every dependency, installed by `brew bundle`
-├── claude/           settings.json, statusline-usage.py, skills/
-├── shell/            zshrc, zprofile, zshenv, zsh_plugins.txt, gitignore_global
-├── tmux/             tmux.conf + the per-session color script
-└── iterm2/           color presets and the Snazzy dynamic profile
+├── bootstrap.sh       curl | bash entry point
+├── install.sh         the installer (sections are --only-selectable)
+├── AGENTS.md          runbook for an AI agent doing the setup (= CLAUDE.md)
+├── Brewfile[.optional] every dependency; optional = Anaconda (~1 GB)
+├── claude/            Claude Code settings, statusline, skills
+├── ai/                Codex, Pi, OpenCode, OpenRouter + the codex-usage bar
+├── shell/             zshrc, zprofile, zshenv, zsh_plugins.txt, gitignore_global
+├── sublime/           Sublime Text user settings
+├── python/            conda config + which-Python-to-use guide
+├── node/              global package list
+├── tmux/              tmux.conf + per-session color script
+└── iterm2/            color presets and the Snazzy dynamic profile
 ```
 
-`shell/`, `tmux/` and `claude/skills/` are **symlinked** into your home directory, so
-`git pull` updates your live config. `claude/settings.json` and the statusline are
-**copied**, because Claude Code rewrites them as you change settings — copies keep your
-personal tweaks out of this repo's git history.
+`shell/`, `tmux/` and `claude/skills/` are **symlinked** into your home directory,
+so `git pull` updates your live config. App-managed files (`claude/settings.json`,
+the statusline, Sublime and OpenCode settings) are **copied**, because those apps
+rewrite their own files and symlinks would dirty this checkout on every change.
 
-## Installing only part of it
+### Partial installs
 
 ```sh
-./install.sh --claude     # only the Claude Code config (statusline, settings, skills)
-./install.sh --no-brew    # skip Homebrew if you already have the tools
+./install.sh --list                 # brew shell tmux iterm2 sublime python node claude ai
+./install.sh --only claude          # one section
+./install.sh --no-optional          # skip Anaconda
+./install.sh --no-brew              # tools already installed
 ```
 
 ---
 
 ## Daily driving it
 
-### Claude Code
+### Usage bars
 
-The statusline reads:
+Claude Code shows its own statusline:
 
 ```
 [Opus 5]  ~/dev/project   ctx ████░░░░░░ 38%   5h ██░░░░░░░░ 21%   7d █████░░░░░ 47%
 ```
 
-`ctx` is the context window for this session; `5h` and `7d` are your plan's rate limits.
-Each bar turns red past 80%. The 5h/7d numbers only appear after the first response in a
-session — Claude has to receive them from the server first.
+**Codex CLI has no statusline**, so this repo adds one — `usage` (or `codex-usage`):
+
+```
+[gpt-5.6-terra]  ctx ████░░░░░░ 35%  5h ██░░░░░░░░ 18% (1h)  7d █████████░ 86% (52h)
+```
+
+It reads Codex's own session files, so it needs no API key and makes no network
+call. `--watch 5` redraws it in a spare pane; `--plain` suits the tmux status bar.
+For a menu-bar readout across all providers at once, `codexbar` is installed too.
+Details and the tmux snippet: [`ai/README.md`](ai/README.md).
 
 ### Shell
 
 | Command | Does |
 |---|---|
-| `z <part-of-dir-name>` | Jump to the directory you use most matching that. `zi` to pick interactively |
-| `Ctrl-R` | Fuzzy-search your whole shell history (atuin) |
+| `z <part-of-name>` | Jump to the directory you use most matching that (`zi` to pick) |
+| `Ctrl-R` | Fuzzy-search all shell history (atuin) |
 | `Ctrl-T` / `Alt-C` | Fuzzy-pick a file / cd into a directory (fzf) |
-| `ll`, `la`, `lt` | Long / all / tree listing with git status and icons (eza) |
+| `ll` `la` `lt` | Long / all / tree listing with git status and icons |
+| `usage` | The Codex context + limit bar |
 | `reload` | Restart the shell after editing `.zshrc` |
 
-`cat`, `grep` and `find` are aliased to `bat`, `rg` and `fd`. If a script needs the real
-one, call it as `\cat` or `/usr/bin/grep`.
+`cat`, `grep`, `find` are aliased to `bat`, `rg`, `fd`. For the real one: `\cat`.
 
 ### tmux
 
-The prefix is **`Ctrl-Space`**, not `Ctrl-b`.
+Prefix is **`Ctrl-Space`**, not `Ctrl-b`.
 
 | Command | Does |
 |---|---|
 | `ts <name>` | Attach to session `<name>`, creating it if needed |
 | `cs <name>` | New session named `<name>` running `claude` |
-| `tl` | List sessions with their assigned color |
-| `tk <name>` | Kill a session — the name is required on purpose, so a typo can't wipe everything |
-| `prefix + \|` / `prefix + -` | Split vertically / horizontally, keeping the current directory |
-| `prefix + s` | Session switcher |
-| `prefix + r` | Reload `~/.tmux.conf` |
-
-Every session gets its own status-bar color automatically, so you can tell at a glance
-which one you're in.
+| `tl` / `tk <name>` | List sessions / kill one (name required, so a typo can't wipe everything) |
+| `prefix + \|` `-` | Split, keeping the current directory |
+| `prefix + s` / `r` | Session switcher / reload config |
 
 ---
 
 ## If something looks wrong
 
-**Boxes (□) instead of icons** — the Nerd Font didn't install or isn't selected.
-Run `brew install --cask font-jetbrains-mono-nerd-font`, then iTerm2 → Settings →
-Profiles → Text → Font → *JetBrainsMono Nerd Font Mono 15*.
+**Boxes (□) instead of icons** — `brew install --cask font-jetbrains-mono-nerd-font`,
+then iTerm2 → Settings → Profiles → Text → *JetBrainsMono Nerd Font Mono 15*.
 
-**Colors look wrong / the profile didn't appear** — iTerm2 loads dynamic profiles live,
-but only from the right folder. Check that
-`~/Library/Application Support/iTerm2/DynamicProfiles/Snazzy-JetBrains.json` exists, then
-set it as default under Settings → Profiles → Other Actions…
+**iTerm2 profile missing** — check
+`~/Library/Application Support/iTerm2/DynamicProfiles/Snazzy-JetBrains.json` exists,
+then Settings → Profiles → Snazzy → Other Actions… → Set as Default. Prefer only the
+colors? Import `iterm2/Snazzy.itermcolors` under Colors → Color Presets… → Import…
 
-**Prefer not to add a profile at all?** Import just the colors instead: iTerm2 → Settings
-→ Profiles → Colors → Color Presets… → Import… → `iterm2/Snazzy.itermcolors`
-(`Material-Theme.itermcolors` is an alternative palette; its profile needs Operator Mono,
-which isn't on Homebrew).
+**Statusline blank** — it needs Apple's Python. Test:
+`echo '{}' | /usr/bin/python3 ~/.claude/statusline-usage.py`. See [`python/README.md`](python/README.md).
 
-**The statusline is blank** — it needs Apple's Python, which is preinstalled at
-`/usr/bin/python3`. Test it directly:
-`echo '{}' | /usr/bin/python3 ~/.claude/statusline-usage.py`
+**`codex-usage` says "no sessions yet"** — Codex hasn't run. Start `codex` once.
 
-**`prompt pure` errors on shell startup** — `brew install pure zsh-async`, then `reload`.
+**Sublime looks unthemed** — Package Control is still fetching. Open it, wait,
+restart. See [`sublime/README.md`](sublime/README.md).
 
-**Want your old setup back** — every file the installer replaced is sitting next to it as
+**`prompt pure` errors** — `brew install pure zsh-async`, then `reload`.
+
+**Want your old setup back** — everything replaced is beside it as
 `.backup.<timestamp>`. Move it back and `reload`.
 
 ## Deliberately not included
 
-Machine-specific or personal, and would only break on another Mac: SSH config and keys,
-the `moshi-hook` Claude Code hooks, `settings.local.json` permission allowlists (they
-contain LAN addresses), and skills that talk to my own servers and vaults. Secrets live in
-1Password and never on disk.
+Personal or machine-specific, and would break elsewhere: SSH config and keys,
+Tailscale/VPN membership, home-server access, private repos, hooks bound to
+local-only binaries, and permission allowlists containing LAN addresses. Secrets
+belong in a password manager; `~/.ai-keys.env` stays outside this repo and is
+git-ignored.

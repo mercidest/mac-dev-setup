@@ -1,0 +1,5 @@
+# Optional extras — big downloads, only worth it if you actually use them.
+# Installed by default; skip with:  ./install.sh --no-optional
+
+cask "anaconda"     # ~1 GB. Conda envs for data science — see python/README.md.
+                    # Skip it if uv covers your Python needs (it usually does).

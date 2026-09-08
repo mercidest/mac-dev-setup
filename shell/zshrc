@@ -160,6 +160,19 @@ fi
 # Added by Claude Code installer
 export PATH="$HOME/.local/bin:$PATH"
 
+# Personal scripts (codex-usage, tmux-assign-color, …)
+export PATH="$HOME/bin:$PATH"
+
+# --- AI provider keys -------------------------------------------------------
+# ~/.ai-keys.env holds OPENROUTER_API_KEY and friends. It is chmod 600, lives
+# outside the dotfiles repo, and is never committed. See ai/README.md.
+if [ -r "$HOME/.ai-keys.env" ]; then
+  set -a; source "$HOME/.ai-keys.env"; set +a
+fi
+
+# usage   → the Codex context/limit bar (Claude Code has its own statusline)
+alias usage='codex-usage'
+
 # --- tmux session helpers (per-session colors live in ~/.tmux.conf) ---
 # ts [name]   attach to session <name> (default: main), creating it if needed
 ts() { tmux new-session -A -s "${1:-main}"; }

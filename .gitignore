@@ -1,3 +1,9 @@
 .DS_Store
 ._*
 *.backup.*
+
+# never commit real keys — only ai/ai-keys.env.example belongs here
+.ai-keys.env
+ai-keys.env
+*.env
+!*.env.example

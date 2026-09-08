@@ -1,0 +1,17 @@
+{
+	"bootstrapped": true,
+	"in_process_packages":
+	[
+	],
+	"installed_packages":
+	[
+		"A File Icon",
+		"AutoPEP8",
+		"Material Theme",
+		"Package Control",
+		"PackageDev",
+		"SideBarEnhancements",
+		"SublimeLinter",
+		"SublimeLinter-pycodestyle",
+	],
+}
