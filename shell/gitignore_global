@@ -1,7 +1,13 @@
+# macOS
 .DS_Store
 ._*
 .Spotlight-V100
 .Trashes
 Thumbs.db
 
+# Python — bytecode caches, regenerated on every run and never worth committing
+__pycache__/
+*.py[cod]
+
+# Claude Code per-machine permissions (machine-specific paths and hosts)
 **/.claude/settings.local.json
