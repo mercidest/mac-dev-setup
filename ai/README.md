@@ -66,9 +66,126 @@ pi                              # interactive
 pi --help                       # flags, including JSONL output
 ```
 
-`pi/models.json` → `~/.pi/agent/models.json` defines which OpenRouter models it
-offers. Edit that list freely; re-check ids against <https://openrouter.ai/models>
-because OpenRouter retires models without notice.
+`pi/models.json` defines which OpenRouter models Pi offers. Edit that list
+freely; re-check ids against <https://openrouter.ai/models> because OpenRouter
+retires models without notice.
+
+**It is merged into `~/.pi/agent/models.json`, never copied over it.** Pi's model
+file is somewhere you configure things — a private base URL, your own model list,
+a different key source — so `install.sh` runs `pi/merge-models.py`, whose rule is
+one-way:
+
+> a provider you already have is never touched; only missing ones are added.
+
+So re-running `--only pi` on a machine where you have configured, say, an
+`opencode-go` provider adds `openrouter` alongside it and leaves yours exactly as
+it was, key indirection included. A second run reports "already present" and does
+not write at all. A backup is taken only when something actually changes, and the
+write is atomic, so an interrupted run cannot leave you a half-written config.
+
+Two consequences worth knowing:
+
+- **Repo updates to an existing provider do not reach you.** If `openrouter` here
+  gains models and you already have an `openrouter` block, yours wins. Take the
+  new one with `PI_MODELS_FORCE=1 ./install.sh --only pi` (it backs up first), or
+  delete your block and re-run.
+- **A `models.json` that is not valid JSON is refused, not repaired.** The script
+  leaves it untouched and `install.sh` prints a warning, on the grounds that a
+  hand-edited file you can still fix beats one silently replaced.
+
+### oh-my-pi — an extension, not a CLI
+
+[oh-my-pi](https://github.com/acidsugarx/oh-my-pi) layers nine skills
+(`code-review`, `debugging`, `refactor`, `security-review`…) and an orchestrator
+prompt on top of Pi. Install it **through Pi**, never globally:
+
+```sh
+pi install npm:oh-my-pi          # correct — registers it in ~/.pi/settings
+npm i -g oh-my-pi                # WRONG — ships a broken binary
+```
+
+The published `bin/oh-my-pi.js` contains uncompiled TypeScript and dies on
+`SyntaxError` the moment you run it. The package's real entry point is
+`dist/extension.js`, which is what `pi install` wires up. Treat the project as
+low-provenance: single maintainer, three releases, untouched since June 2026.
+
+### `[Skill conflicts]` — two different diagnostics under one heading
+
+Pi groups two unrelated things under this heading, and only one of them is
+oh-my-pi's doing. Neither is an error. Knowing which you are looking at matters,
+because `install.sh` silences the first and **cannot** silence the second.
+
+#### 1. "skill path does not exist" — silenced by install.sh
+
+```text
+[Skill conflicts]
+  /some/project/.oh-my-pi/skills
+    skill path does not exist
+```
+
+oh-my-pi registers two skill paths (`dist/extension.js`): the package's own
+`skills/` directory, and the string `.oh-my-pi/skills/`. That second one is
+**relative**, and Pi resolves it against the current working directory
+(`dist/core/skills.js`, `resolvePath(rawPath, resolvedCwd)`), so Pi reports it
+missing in every directory that lacks one. The bundled skills load fine
+regardless — that is the `[Skills]` line above the warning.
+
+The only condition is `existsSync`, so creating the directory silences it:
+
+```sh
+mkdir -p ~/.oh-my-pi/skills      # done by install.sh; clears it when Pi starts from $HOME
+```
+
+Verified on a clean machine: from `$HOME` the line is gone; from a directory
+without one it comes back, naming that directory. Because the path is
+cwd-relative, only create it in a repo where you are actually writing a
+project-local skill — git cannot track an empty directory, so an empty one would
+never survive a clone anyway.
+
+#### 2. Name collisions — expected, and not silenced
+
+```text
+[Skill conflicts]
+  "code-review" collision:
+    ✓ auto (user) ~/.agents/skills/code-review/SKILL.md
+    ✗ ~/.pi/agent/npm/node_modules/oh-my-pi/skills/code-review.md (skipped)
+```
+
+oh-my-pi ships nine skills with ordinary names — `code-review`, `debugging`,
+`refactor`, `security-review` — and several collide with skills you already have.
+Pi resolves each collision by **keeping the higher-priority one and skipping the
+rest**; the `✓` marks the winner. Your own skill wins over a package's.
+
+So **`[Skill conflicts]` will still appear after install** if any name overlaps.
+That is the system working, not a failure. Nothing is broken and no skill is
+lost — the losing file is simply not loaded. If you would rather Pi stop
+mentioning it, resolve the overlap: rename your skill, or turn off oh-my-pi's
+copy with `pi config` (Tab switches scope).
+
+Two cosmetic quirks worth recognising so you don't go hunting for a bug:
+
+- The skipped file is often listed **twice**. oh-my-pi's `skills/` directory is
+  registered both by `package.json`'s `pi.skills` field and again by the
+  extension, so Pi sees the same path from two sources and reports each.
+- The `[Skill conflicts]` heading is a TUI widget, not a stdout line. Piping Pi's
+  output to a file shows nothing — you need a real terminal (or
+  `tmux capture-pane`) to see it.
+
+### tmux: `extended-keys-format` must be `csi-u`
+
+Pi warns if tmux is left on the default. Note this is a *different* option from
+`extended-keys on` — setting one does not set the other. `tmux/tmux.conf` now sets
+both. Editing the file does not touch an already-running server, so also run:
+
+```sh
+tmux set -g extended-keys-format csi-u     # applies live, keeps sessions intact
+```
+
+### Package scope moved
+
+Pi is published as `@earendil-works/pi-coding-agent`. The older
+`@mariozechner/*` packages are deprecated and only re-export it — install from
+the new scope.
 
 ## OpenCode
 
@@ -80,6 +197,36 @@ opencode                        # TUI
 
 `opencode/opencode.jsonc` → `~/.config/opencode/opencode.jsonc` adds OpenRouter as
 a second provider alongside whatever you log into.
+
+### If `opencode auth login` returns `Invalid authorization code`
+
+```json
+{"error":"Invalid authorization code","cause":{"code":"…","state":"…"}}
+```
+
+Usual cause is a second, still-running `opencode auth login` holding the callback
+listener: the browser redirect lands in a process whose PKCE verifier is not the
+one that built the URL you clicked. Clear the strays and do the whole flow in one
+pass, without reloading the browser tab:
+
+```sh
+pkill -f "opencode auth login"
+opencode auth login
+```
+
+Also worth checking: Homebrew's `opencode` can trail the npm release by several
+patch versions, so `brew upgrade opencode` is a reasonable second move.
+
+To swap a pasted key for an account login, remove the old credential first —
+`opencode auth list` shows `type=api` for a pasted key and `type=oauth` for an
+account login:
+
+```sh
+opencode auth logout opencode    # unrecoverable; keep the key elsewhere if you need it
+opencode auth login
+```
+
+Note an `OPENROUTER_API_KEY` in the environment shadows what you log in with.
 
 ---
 
