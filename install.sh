@@ -260,9 +260,14 @@ if has pi; then
   fi
   # Merge, never replace: a provider you configured yourself survives re-runs.
   # See ai/pi/merge-models.py. Exit 10 means "nothing to add".
+  # `|| merge_rc=$?` is load-bearing: under `set -e` a bare assignment from a
+  # command substitution that exits non-zero aborts the whole script, which would
+  # silently skip everything below (rc=10 just means "nothing to add").
+  merge_rc=0
   merge_out=$(/usr/bin/python3 "$REPO/ai/pi/merge-models.py" \
-                "$REPO/ai/pi/models.json" "$HOME/.pi/agent/models.json" 2>&1)
-  case $? in
+                "$REPO/ai/pi/models.json" "$HOME/.pi/agent/models.json" 2>&1) \
+    || merge_rc=$?
+  case $merge_rc in
     0)  ok   "models.json: $merge_out" ;;
     10) skip "models.json: $merge_out" ;;
     *)  warn "models.json NOT updated: $merge_out" ;;
