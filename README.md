@@ -1,7 +1,7 @@
 # mac-dev-setup
 
 A complete developer environment for a fresh Mac — terminal, editor, toolchains
-and five AI coding agents — reproducible from this repo alone. Built for
+and four AI coding agents — reproducible from this repo alone. Built for
 **macOS on Apple Silicon**.
 
 ## Install
@@ -50,7 +50,7 @@ Re-running is safe. Anything replaced is backed up as `<file>.backup.<timestamp>
 | **Editor** | Sublime Text 4 — Material Theme, rulers, linting, `subl` on PATH |
 | **Python** | `uv` for projects, Anaconda optional, and the rule for which of the three Pythons to use |
 | **Node** | Homebrew node + `pnpm`, global packages from a list |
-| **AI agents** | Claude Code, Codex CLI, Pi, OpenCode, Gemini CLI |
+| **AI agents** | Claude Code, Codex CLI, Pi, OpenCode |
 | **Usage bars** | Claude Code's statusline, plus `codex-usage` — the equivalent Codex is missing |
 
 ## Layout

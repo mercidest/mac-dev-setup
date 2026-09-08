@@ -1,3 +1,2 @@
 @earendil-works/pi-coding-agent
-@google/gemini-cli
 pnpm

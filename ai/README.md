@@ -1,6 +1,6 @@
 # AI harnesses
 
-Five terminal coding agents, plus the usage bars for them. Everything here is
+Four terminal coding agents, plus the usage bars for them. Everything here is
 installed by `../install.sh`; this file explains what each one is and how to sign in.
 
 | Harness | Install | Sign in | Billing |
@@ -9,9 +9,16 @@ installed by `../install.sh`; this file explains what each one is and how to sig
 | **Codex CLI** | `brew install --cask codex` | `codex login` → browser | Your ChatGPT plan |
 | **Pi** | `npm i -g @earendil-works/pi-coding-agent` | key in `~/.ai-keys.env` | Pay-per-token via OpenRouter |
 | **OpenCode** | `brew install opencode` | `opencode auth login` | OpenCode Zen, or OpenRouter |
-| **Gemini CLI** | `npm i -g @google/gemini-cli` | `gemini` → browser | Google account free tier |
 
 None of these ship credentials in this repo. Each one logs into **your own** account.
+
+> **Gemini CLI is deliberately not here.** Its zero-config "sign in with your Google
+> account" path reportedly closed in June 2026, so it now wants an AI Studio API key
+> tied to a Google Cloud project. That is a fine tool, just no longer a one-command
+> default — add it yourself with `npm i -g @google/gemini-cli` and a key from
+> <https://aistudio.google.com/apikey> if you want it. Note its paid tier is
+> *postpaid* pay-as-you-go, unlike Anthropic's prepaid credits, so there is no
+> spend floor to stop a runaway loop — set a budget on the Cloud project.
 
 ---
 
