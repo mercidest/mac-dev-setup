@@ -190,6 +190,36 @@ tk() {
   tmux kill-session -t "$1" && echo "killed session: $1"
 }
 
+# tR          restore every saved session after a reboot (tmux-resurrect/continuum).
+# Continuum only auto-restores within 10s of the tmux SERVER starting, and a
+# sessionless server exits instantly — so this starts a throwaway session to hold
+# the server open, waits for the restore to settle, then drops it.
+tR() {
+  if tmux has-session 2>/dev/null; then
+    echo "tmux is already running — auto-restore only fires on a fresh server."
+    echo "Attach and press Ctrl+Space Ctrl-r to restore by hand."; echo; tl; return 1
+  fi
+  local snap="$HOME/.local/share/tmux/resurrect/last"
+  if [[ ! -e "$snap" ]]; then
+    echo "tR: no snapshot at $snap — nothing to restore."; return 1
+  fi
+  echo "tR: restoring $(grep -c '^pane' "$snap") panes saved $(date -r "$snap" '+%d %b %H:%M')…"
+  tmux new-session -d -s boot          # holds the server open; triggers the restore
+  local prev=-1 now=0 i=0
+  while (( i++ < 30 )); do             # up to ~15s; restore sleeps 1s before starting
+    sleep 0.5
+    now=$(tmux list-panes -a 2>/dev/null | wc -l | tr -d ' ')
+    (( now == prev && now > 1 )) && break
+    prev=$now
+  done
+  if (( now <= 1 )); then
+    echo "tR: auto-restore did not fire (another tmux server? halt file?)."
+    echo "    'boot' left running — ts boot, then Ctrl+Space Ctrl-r."; return 1
+  fi
+  tmux kill-session -t boot 2>/dev/null
+  echo; tl
+}
+
 # On SSH login (and not already inside tmux), show the available sessions so
 # you can pick one yourself with `ts <name>` / `cs <name>` — no auto-attach.
 if [[ -n "$SSH_CONNECTION" && -z "$TMUX" ]]; then

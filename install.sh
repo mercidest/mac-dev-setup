@@ -138,6 +138,19 @@ if has tmux; then
   link tmux/tmux.conf "$HOME/.tmux.conf"
   mkdir -p "$HOME/bin"
   link tmux/tmux-assign-color.sh "$HOME/bin/tmux-assign-color.sh"
+  # TPM — powers tmux-resurrect + tmux-continuum, which restore your sessions
+  # after a reboot. The @plugin lines in tmux.conf are inert without it.
+  if [ -d "$HOME/.tmux/plugins/tpm" ]; then
+    ok "tpm already present"
+  elif command -v git >/dev/null; then
+    if git clone -q https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"; then
+      ok "tpm cloned — press prefix + I inside tmux to install the plugins"
+    else
+      warn "tpm clone failed — session restore will not work"
+    fi
+  else
+    warn "git missing — skipped tpm (session restore will not work)"
+  fi
 fi
 
 # ----------------------------------------------------------------- 4. iTerm2

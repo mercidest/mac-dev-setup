@@ -143,8 +143,22 @@ Prefix is **`Ctrl-Space`**, not `Ctrl-b`.
 | `ts <name>` | Attach to session `<name>`, creating it if needed |
 | `cs <name>` | New session named `<name>` running `claude` |
 | `tl` / `tk <name>` | List sessions / kill one (name required, so a typo can't wipe everything) |
+| `tR` | Restore every saved session after a reboot (see below) |
 | `prefix + \|` `-` | Split, keeping the current directory |
 | `prefix + s` / `r` | Session switcher / reload config |
+
+**Sessions survive a reboot.** `tmux-resurrect` + `tmux-continuum` (installed via TPM by
+`install.sh`) auto-save every 15 min and rebuild your sessions — names, windows, panes,
+layouts and each pane's working directory — the next time a tmux server starts. Panes come
+back as fresh shells in the right directory; **running programs are not restored**, so
+reattach your agent yourself (`claude --continue` picks the conversation back up).
+
+- Before a deliberate reboot: `prefix + Ctrl-s` to save right now (auto-save can be 15 min stale).
+- After the reboot: **`tR`** — it starts the server, waits for the restore, and lists what came back.
+- If auto-restore didn't fire: attach to any session and press `prefix + Ctrl-r`.
+
+`claude` is deliberately *not* in `@resurrect-processes`: restoring it would relaunch with an
+empty conversation, which looks like a restore but silently loses the session.
 
 ---
 
