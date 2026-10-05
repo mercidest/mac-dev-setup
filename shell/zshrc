@@ -1,5 +1,5 @@
 # If you come from bash you might have to change your $PATH.
-# export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
+# export PATH=$HOME/Developer/bin:$HOME/.local/bin:/usr/local/bin:$PATH
 
 # Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
@@ -161,7 +161,7 @@ fi
 export PATH="$HOME/.local/bin:$PATH"
 
 # Personal scripts (codex-usage, tmux-assign-color, …)
-export PATH="$HOME/bin:$PATH"
+export PATH="$HOME/Developer/bin:$PATH"
 
 # --- AI provider keys -------------------------------------------------------
 # ~/.ai-keys.env holds OPENROUTER_API_KEY and friends. It is chmod 600, lives

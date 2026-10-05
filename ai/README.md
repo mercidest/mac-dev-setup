@@ -244,13 +244,13 @@ Want only this, on a machine you are not otherwise reconfiguring?
 ```
 
 That installs the Codex CLI and its small tmux dependency (via Homebrew, if
-missing), writes `~/bin/codex` plus `~/bin/codex-usage`, adds `~/bin` to PATH,
+missing), writes `~/Developer/bin/codex` plus `~/Developer/bin/codex-usage`, adds `~/Developer/bin` to PATH,
 and seeds `~/.codex/config.toml` only if you don't already have one. It installs
 no other AI harness.
 
 ### 1. Automatic graphical bar — just run `codex`
 
-`~/bin/codex` is a lightweight launcher around the real Homebrew binary. For an
+`~/Developer/bin/codex` is a lightweight launcher around the real Homebrew binary. For an
 interactive session it creates a two-line tmux pane beneath Codex and runs the
 usage gauge there, refreshing every two seconds. The pane disappears when Codex
 exits. If you are already inside tmux, it adds and removes the pane in the
@@ -287,7 +287,7 @@ Weekly limit interactively.
 
 ### 3. `codex-usage` — graphical bars outside Codex
 
-`bin/codex-usage.py`, installed as `codex-usage` in `~/bin`:
+`bin/codex-usage.py`, installed as `codex-usage` in `~/Developer/bin`:
 
 ```
 $ codex-usage
@@ -314,7 +314,7 @@ To keep it in the tmux status bar, add to `~/.tmux.conf`:
 
 ```tmux
 set -g status-interval 15
-set -ag status-right '#[fg=#7aa2f7]#(~/bin/codex-usage --plain)#[default] '
+set -ag status-right '#[fg=#7aa2f7]#(~/Developer/bin/codex-usage --plain)#[default] '
 ```
 
 ### 4. CodexBar — a menu-bar readout for everything at once

@@ -136,8 +136,8 @@ fi
 if has tmux; then
   say "tmux"
   link tmux/tmux.conf "$HOME/.tmux.conf"
-  mkdir -p "$HOME/bin"
-  link tmux/tmux-assign-color.sh "$HOME/bin/tmux-assign-color.sh"
+  mkdir -p "$HOME/Developer/bin"
+  link tmux/tmux-assign-color.sh "$HOME/Developer/bin/tmux-assign-color.sh"
   # TPM — powers tmux-resurrect + tmux-continuum, which restore your sessions
   # after a reboot. The @plugin lines in tmux.conf are inert without it.
   if [ -d "$HOME/.tmux/plugins/tpm" ]; then
@@ -234,21 +234,21 @@ if has codex; then
     else warn "tmux missing — Codex will run without the attached graphical bar"; fi
   fi
 
-  mkdir -p "$HOME/bin"
-  copy ai/bin/codex-usage.py "$HOME/bin/codex-usage"
-  chmod +x "$HOME/bin/codex-usage"
-  ok "codex-usage → ~/bin/codex-usage"
-  copy ai/bin/codex-with-bar.zsh "$HOME/bin/codex"
-  chmod +x "$HOME/bin/codex"
-  ok "codex launcher → ~/bin/codex"
+  mkdir -p "$HOME/Developer/bin"
+  copy ai/bin/codex-usage.py "$HOME/Developer/bin/codex-usage"
+  chmod +x "$HOME/Developer/bin/codex-usage"
+  ok "codex-usage → ~/Developer/bin/codex-usage"
+  copy ai/bin/codex-with-bar.zsh "$HOME/Developer/bin/codex"
+  chmod +x "$HOME/Developer/bin/codex"
+  ok "codex launcher → ~/Developer/bin/codex"
   case ":$PATH:" in
-    *":$HOME/bin:"*) ;;
-    *) if ! grep -Fq 'export PATH="$HOME/bin:$PATH"' "$HOME/.zshrc" 2>/dev/null; then
+    *":$HOME/Developer/bin:"*) ;;
+    *) if ! grep -Fq 'export PATH="$HOME/Developer/bin:$PATH"' "$HOME/.zshrc" 2>/dev/null; then
          [ -f "$HOME/.zshrc" ] && cp "$HOME/.zshrc" "$HOME/.zshrc.backup.$STAMP"
-         printf '\n# Codex launcher and usage bar\nexport PATH="$HOME/bin:$PATH"\n' >> "$HOME/.zshrc"
-         ok "~/bin added to PATH in ~/.zshrc"
+         printf '\n# Codex launcher and usage bar\nexport PATH="$HOME/Developer/bin:$PATH"\n' >> "$HOME/.zshrc"
+         ok "~/Developer/bin added to PATH in ~/.zshrc"
        fi
-       export PATH="$HOME/bin:$PATH" ;;
+       export PATH="$HOME/Developer/bin:$PATH" ;;
   esac
 
   # Codex rewrites config.toml at runtime with machine-specific plugin paths,
