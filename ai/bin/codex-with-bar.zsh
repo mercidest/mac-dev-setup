@@ -6,7 +6,7 @@ setopt no_unset pipe_fail
 zmodload zsh/datetime
 
 readonly SELF="${0:A}"
-readonly USAGE_BAR="${CODEX_USAGE_BAR:-$HOME/bin/codex-usage}"
+readonly USAGE_BAR="${CODEX_USAGE_BAR:-$HOME/Developer/bin/codex-usage}"
 
 find_real_codex() {
   local candidate
@@ -68,6 +68,7 @@ done
 watch_command="${(q)USAGE_BAR} --watch 2 --since ${(q)LAUNCHED_AT} --cwd ${(q)session_cwd}"
 
 if [[ -n "${TMUX:-}" ]]; then
+  watch_command+=" --pane ${(q)TMUX_PANE}"
   watcher="$(tmux split-window -d -v -l 2 -c "$PWD" -P -F '#{pane_id}' "$watch_command")" || {
     exec "$REAL_CODEX" "$@"
   }
@@ -89,13 +90,14 @@ session="codex-bar-$$-$RANDOM"
 command_parts=("$SELF" --codex-bar-inside "$session" "$@")
 codex_command="${(j: :)${(q)command_parts[@]}}"
 
-if ! tmux new-session -d -s "$session" -c "$PWD" "$codex_command"; then
+if ! main_pane="$(tmux new-session -d -P -F '#{pane_id}' -s "$session" -c "$PWD" "$codex_command")"; then
   exec "$REAL_CODEX" "$@"
 fi
+watch_command+=" --pane ${(q)main_pane}"
 tmux set-option -t "$session" status off
-if ! tmux split-window -d -v -l 2 -t "$session":1.1 -c "$PWD" "$watch_command"; then
+if ! tmux split-window -d -v -l 2 -t "$main_pane" -c "$PWD" "$watch_command"; then
   tmux kill-session -t "$session" >/dev/null 2>&1 || true
   exec "$REAL_CODEX" "$@"
 fi
-tmux select-pane -t "$session":1.1
+tmux select-pane -t "$main_pane"
 tmux attach-session -t "$session"
